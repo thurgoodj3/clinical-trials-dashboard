@@ -1,8 +1,17 @@
+# frontend/streamlit_app.py
+import os
 import requests
 import streamlit as st
 import pandas as pd
 
-API_BASE = "http://localhost:5000/api"
+API_BASE = os.getenv("API_BASE", "http://localhost:5000/api")
+API_KEY = "super-simple-api-key"  # must match backend
+
+# Simple in-memory user store (for demo only)
+USERS = {
+    "uploader": {"password": "upload123", "role": "uploader"},
+    "viewer": {"password": "view123", "role": "viewer"},
+}
 
 
 @st.cache_data(show_spinner=False)
@@ -30,12 +39,113 @@ def require_backend():
         st.stop()
 
 
+def login_sidebar():
+    """Very simple login in the sidebar using the USERS dict."""
+    st.sidebar.title("Login")
+
+    if "user" not in st.session_state:
+        st.session_state["user"] = None
+        st.session_state["role"] = None
+
+    # Already logged in
+    if st.session_state["user"]:
+        st.sidebar.write(
+            f"Logged in as **{st.session_state['user']}** "
+            f"({st.session_state['role']})"
+        )
+        if st.sidebar.button("Log out"):
+            st.session_state["user"] = None
+            st.session_state["role"] = None
+            # Clear cached data on logout
+            fetch_summary.clear()
+            fetch_sample.clear()
+        return
+
+    # Login form
+    with st.sidebar.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Login")
+
+    if submitted:
+        info = USERS.get(username)
+        if info and info["password"] == password:
+            st.session_state["user"] = username
+            st.session_state["role"] = info["role"]
+            st.sidebar.success("Login successful.")
+        else:
+            st.sidebar.error("Invalid username or password.")
+
+
+def upload_section():
+    """
+    Panel visible only to uploader role.
+    Sends a ZIP to the Flask backend's /api/upload_snapshot endpoint.
+    """
+    st.subheader("Upload New AACT Snapshot (Uploader Only)")
+
+    uploaded_zip = st.file_uploader(
+        "Upload AACT snapshot ZIP file",
+        type=["zip"],
+        help="Use a flatfiles snapshot from the AACT website.",
+    )
+
+    if uploaded_zip is not None:
+        if st.button("Upload to Server"):
+            try:
+                files = {
+                    "file": (
+                        uploaded_zip.name,
+                        uploaded_zip.getvalue(),
+                        "application/zip",
+                    )
+                }
+                headers = {"X-API-KEY": API_KEY}
+                resp = requests.post(
+                    f"{API_BASE}/upload_snapshot",
+                    files=files,
+                    headers=headers,
+                )
+                if resp.status_code == 200:
+                    st.success("Upload successful. Data has been refreshed.")
+                    # Clear caches so new data is loaded
+                    fetch_summary.clear()
+                    fetch_sample.clear()
+                else:
+                    try:
+                        msg = resp.json().get("error", resp.text)
+                    except Exception:
+                        msg = resp.text
+                    st.error(f"Upload failed: {msg}")
+            except Exception as e:
+                st.error(f"Error uploading file: {e}")
+
+
 def main():
     st.set_page_config(page_title="Clinical Trials Dashboard", layout="wide")
+
+    login_sidebar()
+
+    # Require login
+    if not st.session_state.get("user"):
+        st.title("Clinical Trials Dashboard (AACT, Core Parameters)")
+        st.info("Please log in as 'uploader' or 'viewer' in the sidebar.")
+        st.stop()
+
+    role = st.session_state.get("role", "viewer")
+
     st.title("Clinical Trials Dashboard (AACT, Core Parameters)")
+    st.caption(f"Role: **{role}**")
 
     require_backend()
 
+    # Uploader panel
+    if role == "uploader":
+        with st.expander("Uploader Panel", expanded=False):
+            upload_section()
+        st.markdown("---")
+
+    # Load data from backend
     summary = fetch_summary()
     sample_df = fetch_sample()
 
@@ -50,15 +160,17 @@ def main():
 
     st.markdown("---")
 
-    # --- Charts: by phase, by study type, by status ---
+    # --- Charts ---
     col_a, col_b, col_c = st.columns(3)
 
     with col_a:
         st.subheader("Studies by Phase")
         phase_df = (
             pd.DataFrame(
-                {"phase": list(summary["by_phase"].keys()),
-                 "count": list(summary["by_phase"].values())}
+                {
+                    "phase": list(summary["by_phase"].keys()),
+                    "count": list(summary["by_phase"].values()),
+                }
             )
             .sort_values("count", ascending=False)
         )
@@ -68,8 +180,10 @@ def main():
         st.subheader("Studies by Study Type")
         type_df = (
             pd.DataFrame(
-                {"study_type": list(summary["by_study_type"].keys()),
-                 "count": list(summary["by_study_type"].values())}
+                {
+                    "study_type": list(summary["by_study_type"].keys()),
+                    "count": list(summary["by_study_type"].values()),
+                }
             )
             .sort_values("count", ascending=False)
         )
@@ -79,8 +193,10 @@ def main():
         st.subheader("Studies by Overall Status")
         status_df = (
             pd.DataFrame(
-                {"status": list(summary["by_status"].keys()),
-                 "count": list(summary["by_status"].values())}
+                {
+                    "status": list(summary["by_status"].keys()),
+                    "count": list(summary["by_status"].values()),
+                }
             )
             .sort_values("count", ascending=False)
         )
@@ -88,7 +204,7 @@ def main():
 
     st.markdown("---")
 
-    # --- Enrollment by phase table ---
+    # --- Enrollment table ---
     st.subheader("Enrollment by Phase")
     enroll_df = pd.DataFrame.from_dict(summary["enrollment_by_phase"], orient="index")
     enroll_df.index.name = "phase"
@@ -101,8 +217,10 @@ def main():
     if summary["top_countries"]:
         country_df = (
             pd.DataFrame(
-                {"country": list(summary["top_countries"].keys()),
-                 "count": list(summary["top_countries"].values())}
+                {
+                    "country": list(summary["top_countries"].keys()),
+                    "count": list(summary["top_countries"].values()),
+                }
             )
             .sort_values("count", ascending=False)
         )
@@ -112,7 +230,7 @@ def main():
 
     st.markdown("---")
 
-    # --- Sample table with filters ---
+    # --- Sample grid with filters ---
     st.subheader("Sample of Trials (Core Parameters)")
 
     phases = ["All"] + sorted(sample_df["phase"].dropna().unique().tolist())
