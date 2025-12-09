@@ -1,4 +1,3 @@
-README.md
 Clinical Trials Dashboard
 
 This project is a lightweight web application for exploring clinical trial data using a small set of core fields. It includes a Flask API backend, a Streamlit-based dashboard frontend, and a PostgreSQL database hosted on Render. The application supports two roles—Viewer and Uploader—allowing basic access control for browsing or updating the dataset.
