@@ -1,9 +1,23 @@
-from flask import Flask, jsonify
+# backend/api.py
+import os
+from flask import Flask, jsonify, request
 from flask_cors import CORS
+from dotenv import load_dotenv
+
+# -------------------------------------------------
+# Load .env from the project root (one level up)
+# -------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+dotenv_path = os.path.join(BASE_DIR, ".env")
+load_dotenv(dotenv_path)
+
+# Now that env vars are loaded, it's safe to import data_loader
 from data_loader import load_core_trials
 
 app = Flask(__name__)
 CORS(app)  # allow Streamlit (different port) to call this API
+
+API_KEY = "super-simple-api-key"
 
 
 @app.route("/api/health")
@@ -13,15 +27,6 @@ def health():
 
 @app.route("/api/studies/summary")
 def studies_summary():
-    """
-    Returns:
-      - total_studies
-      - counts by phase
-      - counts by study_type
-      - counts by overall_status
-      - enrollment stats by phase
-      - top countries (by number of trials)
-    """
     df = load_core_trials()
 
     by_phase = df["phase"].value_counts().to_dict()
@@ -36,7 +41,7 @@ def studies_summary():
         .to_dict(orient="index")
     )
 
-    # simple country count: each trial may have multiple countries (split on ";")
+    # simple country count from the aggregated all_countries column
     country_counts = {}
     for countries in df["all_countries"].dropna():
         for c in str(countries).split(";"):
@@ -45,7 +50,6 @@ def studies_summary():
                 continue
             country_counts[name] = country_counts.get(name, 0) + 1
 
-    # take top 10
     top_countries = dict(
         sorted(country_counts.items(), key=lambda kv: kv[1], reverse=True)[:10]
     )
@@ -64,9 +68,6 @@ def studies_summary():
 
 @app.route("/api/studies/sample")
 def studies_sample():
-    """
-    Returns a small sample of rows with our < 10 parameters.
-    """
     df = load_core_trials()
     cols = [
         "nct_id",
@@ -83,5 +84,4 @@ def studies_sample():
 
 
 if __name__ == "__main__":
-    # Run Flask API on port 5000
     app.run(host="0.0.0.0", port=5000, debug=True)
