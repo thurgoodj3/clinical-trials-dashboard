@@ -1,79 +1,69 @@
-Clinical Trials Dashboard
+📊 Clinical Trials Dashboard
 
-This project is a lightweight web application for exploring clinical trial data using a small set of core fields. It includes a Flask API backend, a Streamlit-based dashboard frontend, and a PostgreSQL database hosted on Render. The application supports two roles—Viewer and Uploader—allowing basic access control for browsing or updating the dataset.
+A lightweight web application for exploring clinical trial data using a curated set of core fields. The system includes:
 
-Features
-Dashboard
+Flask API backend (deployed on Render)
 
-View study counts by phase, study type, and recruitment status
+Streamlit dashboard frontend (also deployed on Render)
 
-Enrollment statistics by phase
+PostgreSQL database hosted on Render
 
-Top countries represented across trials
+Role-based access for dataset control (Viewer / Uploader)
 
-Filterable table of study records
+🚀 Features
+👀 Viewer Capabilities
 
-Built with Streamlit for a simple, interactive user experience
+Interactive dashboard
 
-Role-Based Access
+Counts by phase, study type, and recruitment status
 
-Viewer: Can browse the dashboard and run data queries
+Enrollment statistics
 
-Uploader: Can upload new AACT snapshot files, which trigger backend processing and database refresh
+Top countries for trial locations
 
-Backend
+Filterable trial table
 
-Flask API deployed on Render
+🔐 Uploader Capabilities
 
-Endpoints for summary statistics, sample data, and snapshot uploads
+All viewer features plus the ability to upload new AACT snapshot ZIP files
 
-Data stored in a Render-managed PostgreSQL instance
+Upload triggers data ingestion and refresh in the Render PostgreSQL database
 
-Tech Stack
-
-Frontend: Streamlit
-Backend: Flask (REST API)
-Database: PostgreSQL (Render)
-Deployment: Render (backend + frontend)
-
-Core Data Fields
-
-To keep the application efficient and easy to maintain, the backend stores fewer than ten key fields from each trial:
-
-nct_id
-
-brief_title
-
-overall_status
-
-study_type
-
-phase
-
-enrollment
-
-all_countries
-
-all_id_information
-
-These fields are derived from AACT snapshot files and then written to the PostgreSQL database.
-
-Application Structure
+🧱 Tech Stack
+Layer	Technology
+Frontend	Streamlit
+Backend	Flask REST API
+Database	PostgreSQL (Render)
+Deployment	Render Web Services
+📁 Project Structure
 clinical-trials-dashboard/
 │
 ├── backend/
-│   ├── api.py                  # Flask API
-│   └── data_loader.py          # Loads data from AACT and writes to PostgreSQL
+│   ├── api.py                  # Flask API service
+│   └── data_loader.py          # Data extraction and DB ingestion
 │
 ├── frontend/
-│   └── streamlit_app.py        # Streamlit dashboard application
+│   └── streamlit_app.py        # Streamlit dashboard UI
 │
-├── data/                       # Used only for local development
-│   └── aact/                   # Optional: AACT flatfiles for testing
+├── data/                       # Used for local development only
+│   └── aact/                   # Optional: AACT flatfiles
 │
 └── requirements.txt
 
-Running the App Locally
+🗂️ Core Data Fields (Under 10)
+
+To keep the dashboard simple and performant, only the following fields are stored in the database:
+
+Field	Description
+nct_id	Primary trial identifier
+brief_title	Study title
+overall_status	Recruiting, Completed, etc.
+study_type	Interventional, Observational
+phase	Phase 1–4
+enrollment	Enrollment counts
+all_countries	Aggregated locations
+all_id_information	Aggregated registry/sponsor IDs
+🧰 Local Development Setup
 1. Clone the repository
 git clone https://github.com/<your-username>/clinical-trials-dashboard.git
 cd clinical-trials-dashboard
@@ -86,64 +76,57 @@ source .venv/bin/activate      # macOS/Linux
 3. Install dependencies
 pip install -r requirements.txt
 
-4. Set environment variables
+4. Create a .env file
+DATABASE_URL=<Render PostgreSQL connection string>
+API_KEY=<secret uploader key>
 
-Create a .env file with:
-
-DATABASE_URL=<your Render PostgreSQL connection URL>
-API_KEY=<your uploader API key>
-
-5. Run the backend (Flask)
+5. Start backend
 cd backend
 python api.py
 
-6. Run the frontend (Streamlit)
+6. Start frontend
 cd frontend
 streamlit run streamlit_app.py
 
-Deployment (Render)
+🌐 Deployment (Render)
 Backend
 
-Flask app is deployed as a Render Web Service
+Deployed as a Render Web Service
 
-Connected to the Render PostgreSQL database
+Connects to Render PostgreSQL
 
-Automatically reloads new data when an uploader sends a ZIP file
+Handles summary endpoints and file upload endpoint
 
 Frontend
 
-Streamlit is deployed as a separate Render Web Service
+Streamlit deployed as a separate Render Web Service
 
-Communicates with the Flask backend over HTTPS
+Communicates with Flask API over HTTPS
 
-Uploader Instructions
+🔑 Login Credentials
+Role	Username	Password	Permissions
+Uploader	uploader	upload123	Uploads new dataset snapshots
+Viewer	viewer	view123	Read-only access
+📤 Uploading New AACT Data (Uploader Only)
 
 Log in as uploader
 
 Open the Uploader Panel
 
-Upload an official AACT snapshot ZIP
+Upload an AACT snapshot ZIP
 
-The backend processes the snapshot and updates the PostgreSQL database
+Backend extracts the ZIP and loads the data into PostgreSQL
 
-The dashboard automatically reflects the new data
+Dashboard reflects updated data after reload
 
-Viewer Instructions
+📈 Future Enhancements
 
-Log in as viewer
+Additional AACT tables (conditions, interventions, outcomes)
 
-Browse charts, tables, and statistics
+Database-backed authentication
 
-Optionally filter studies by phase, type, or status
-
-Extending the Project
-
-Possible future enhancements include:
-
-Adding more AACT fields (conditions, interventions)
-
-User authentication backed by the database instead of hardcoded values
-
-Automated scheduled updates from AACT
+Scheduled automatic updates
 
 Deployment behind a custom domain
+
+CI/CD integration
