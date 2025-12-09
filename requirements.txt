@@ -1,1 +1,9 @@
-flaskflask-corsstreamlitpandasrequests
+flask
+flask-cors
+streamlit
+pandas
+requests
+gunicorn
+SQLAlchemy
+psycopg2-binary
+python-dotenv
