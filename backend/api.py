@@ -15,9 +15,16 @@ load_dotenv(dotenv_path)
 from data_loader import load_core_trials
 
 app = Flask(__name__)
-CORS(app)  # allow Streamlit (different port) to call this API
+CORS(app)  # allow Streamlit to call this API
 
-API_KEY = "super-simple-api-key"
+API_KEY = os.getenv("API_KEY", "super-simple-api-key")
+
+# -------------------------------------------------
+# Root route REQUIRED for Render health check
+# -------------------------------------------------
+@app.route("/")
+def root():
+    return jsonify({"status": "ok", "message": "clinical-trials backend running"}), 200
 
 
 @app.route("/api/health")
@@ -25,6 +32,9 @@ def health():
     return jsonify({"status": "ok"})
 
 
+# -------------------------------------------------
+# Summary endpoint
+# -------------------------------------------------
 @app.route("/api/studies/summary")
 def studies_summary():
     df = load_core_trials()
@@ -66,6 +76,9 @@ def studies_summary():
     )
 
 
+# -------------------------------------------------
+# Sample studies endpoint
+# -------------------------------------------------
 @app.route("/api/studies/sample")
 def studies_sample():
     df = load_core_trials()
@@ -83,5 +96,10 @@ def studies_sample():
     return jsonify({"rows": sample})
 
 
+# -------------------------------------------------
+# Production-safe entrypoint for local testing
+# (Render uses Gunicorn, so __main__ only runs locally)
+# -------------------------------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
