@@ -1,45 +1,150 @@
-Clinical Trials Dashboard (Flask + Streamlit + AACT Dataset)
+README.md
+Clinical Trials Dashboard
 
-A lightweight, scalable clinical trials analytics dashboard built using:
+This project is a lightweight web application for exploring clinical trial data using a small set of core fields. It includes a Flask API backend, a Streamlit-based dashboard frontend, and a PostgreSQL database hosted on Render. The application supports two roles—Viewer and Uploader—allowing basic access control for browsing or updating the dataset.
 
-Flask for backend API
+Features
+Dashboard
 
-Streamlit for the interactive frontend
+View study counts by phase, study type, and recruitment status
 
-AACT flatfiles as the dataset source
+Enrollment statistics by phase
 
-Role-based access (Uploader/Viewer)
+Top countries represented across trials
 
-<10 core parameters for simplicity and performance
+Filterable table of study records
 
-This project allows users to explore global clinical trial activity and enables authorized users to upload a new AACT dataset snapshot.
+Built with Streamlit for a simple, interactive user experience
 
-⭐ Features
-Viewer Role
+Role-Based Access
 
-Access interactive dashboards
+Viewer: Can browse the dashboard and run data queries
 
-Visualize:
+Uploader: Can upload new AACT snapshot files, which trigger backend processing and database refresh
 
-Studies by Phase
+Backend
 
-Studies by Study Type
+Flask API deployed on Render
 
-Studies by Overall Status
+Endpoints for summary statistics, sample data, and snapshot uploads
 
-Enrollment distributions
+Data stored in a Render-managed PostgreSQL instance
 
-Top countries
+Tech Stack
 
-Filterable sample table of trials
+Frontend: Streamlit
+Backend: Flask (REST API)
+Database: PostgreSQL (Render)
+Deployment: Render (backend + frontend)
 
-No permission to upload data
+Core Data Fields
 
-Uploader Role
+To keep the application efficient and easy to maintain, the backend stores fewer than ten key fields from each trial:
 
-All viewer capabilities plus:
+nct_id
 
-Upload a new AACT snapshot (.zip) through the Streamlit UI
+brief_title
 
-Backend automatically extracts new files and refreshes dataset cache
+overall_status
 
+study_type
+
+phase
+
+enrollment
+
+all_countries
+
+all_id_information
+
+These fields are derived from AACT snapshot files and then written to the PostgreSQL database.
+
+Application Structure
+clinical-trials-dashboard/
+│
+├── backend/
+│   ├── api.py                  # Flask API
+│   └── data_loader.py          # Loads data from AACT and writes to PostgreSQL
+│
+├── frontend/
+│   └── streamlit_app.py        # Streamlit dashboard application
+│
+├── data/                       # Used only for local development
+│   └── aact/                   # Optional: AACT flatfiles for testing
+│
+└── requirements.txt
+
+Running the App Locally
+1. Clone the repository
+git clone https://github.com/<your-username>/clinical-trials-dashboard.git
+cd clinical-trials-dashboard
+
+2. Create and activate a virtual environment
+python -m venv .venv
+source .venv/bin/activate      # macOS/Linux
+.\.venv\Scripts\activate       # Windows
+
+3. Install dependencies
+pip install -r requirements.txt
+
+4. Set environment variables
+
+Create a .env file with:
+
+DATABASE_URL=<your Render PostgreSQL connection URL>
+API_KEY=<your uploader API key>
+
+5. Run the backend (Flask)
+cd backend
+python api.py
+
+6. Run the frontend (Streamlit)
+cd frontend
+streamlit run streamlit_app.py
+
+Deployment (Render)
+Backend
+
+Flask app is deployed as a Render Web Service
+
+Connected to the Render PostgreSQL database
+
+Automatically reloads new data when an uploader sends a ZIP file
+
+Frontend
+
+Streamlit is deployed as a separate Render Web Service
+
+Communicates with the Flask backend over HTTPS
+
+Uploader Instructions
+
+Log in as uploader
+
+Open the Uploader Panel
+
+Upload an official AACT snapshot ZIP
+
+The backend processes the snapshot and updates the PostgreSQL database
+
+The dashboard automatically reflects the new data
+
+Viewer Instructions
+
+Log in as viewer
+
+Browse charts, tables, and statistics
+
+Optionally filter studies by phase, type, or status
+
+Extending the Project
+
+Possible future enhancements include:
+
+Adding more AACT fields (conditions, interventions)
+
+User authentication backed by the database instead of hardcoded values
+
+Automated scheduled updates from AACT
+
+Deployment behind a custom domain
